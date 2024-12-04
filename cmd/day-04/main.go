@@ -26,6 +26,7 @@ func main() {
 	grid := readGrid(os.Stdin)
 
 	fmt.Println("Part 1", part1(&grid))
+	fmt.Println("Part 2", part2(&grid))
 }
 
 func readGrid(r io.Reader) grid {
@@ -97,6 +98,27 @@ func part1(g *grid) int {
 	return len(candidates)
 }
 
+func part2(g *grid) (total int) {
+	for y := 0; y < g.height; y++ {
+		for x := 0; x < g.width; x++ {
+			if *g.get(x, y) != 'A' {
+				continue
+			}
+
+			ul := g.get(g.move(x, y, 1, DIR_U|DIR_L))
+			ur := g.get(g.move(x, y, 1, DIR_U|DIR_R))
+			dl := g.get(g.move(x, y, 1, DIR_D|DIR_L))
+			dr := g.get(g.move(x, y, 1, DIR_D|DIR_R))
+
+			if m_s(ul, dr) && m_s(ur, dl) {
+				total += 1
+			}
+		}
+	}
+
+	return
+}
+
 func (g *grid) get(x, y int) *byte {
 	if y < 0 || g.height <= y {
 		return nil
@@ -129,4 +151,12 @@ func (g *grid) move(x, y, step int, d dir) (dx, dy int) {
 	}
 
 	return
+}
+
+func m_s(a, b *byte) bool {
+	if a == nil || b == nil {
+		return false
+	} else {
+		return *a == 'M' && *b == 'S' || *a == 'S' && *b == 'M'
+	}
 }
