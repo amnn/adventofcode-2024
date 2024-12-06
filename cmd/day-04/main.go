@@ -1,57 +1,22 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
+	"internal/grid"
 	"os"
 )
 
-type grid struct {
-	elems  []byte
-	width  int
-	height int
-}
-
-type dir int
-
-const (
-	DIR_U = dir(1 << iota)
-	DIR_D
-	DIR_L
-	DIR_R
-)
-
 func main() {
-	grid := readGrid(os.Stdin)
+	grid := grid.ReadBytes(os.Stdin)
 
-	fmt.Println("Part 1", part1(&grid))
-	fmt.Println("Part 2", part2(&grid))
+	fmt.Println("Part 1", part1(grid))
+	fmt.Println("Part 2", part2(grid))
 }
 
-func readGrid(r io.Reader) grid {
-	scanner := bufio.NewScanner(r)
-
-	var width, height int
-	elems := make([]byte, 0)
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		height += 1
-		width = len(line)
-		elems = append(elems, line...)
-	}
-
-	return grid{
-		elems,
-		width,
-		height,
-	}
-}
-
-func part1(g *grid) int {
+func part1(g *grid.Grid[byte]) int {
 	type candidate struct {
 		x, y int
-		d    dir
+		d    grid.Dir
 	}
 
 	word := []byte("XMAS")
@@ -60,23 +25,23 @@ func part1(g *grid) int {
 	// Initialise candidates by finding all potential starting points, and
 	// checking if the second letter exists at any of the 8 directions eminating
 	// from the starting point.
-	for y := 0; y < g.height; y++ {
-		for x := 0; x < g.width; x++ {
-			if *g.get(x, y) != word[0] {
+	for y := 0; y < g.Height; y++ {
+		for x := 0; x < g.Width; x++ {
+			if *g.Get(x, y) != word[0] {
 				continue
 			}
 
-			for _, d := range []dir{
-				DIR_U,
-				DIR_U | DIR_R,
-				DIR_R,
-				DIR_D | DIR_R,
-				DIR_D,
-				DIR_D | DIR_L,
-				DIR_L,
-				DIR_U | DIR_L,
+			for _, d := range []grid.Dir{
+				grid.DIR_U,
+				grid.DIR_U | grid.DIR_R,
+				grid.DIR_R,
+				grid.DIR_D | grid.DIR_R,
+				grid.DIR_D,
+				grid.DIR_D | grid.DIR_L,
+				grid.DIR_L,
+				grid.DIR_U | grid.DIR_L,
 			} {
-				if chr := g.get(g.move(x, y, 1, d)); chr != nil && *chr == word[1] {
+				if chr := g.Get(d.Move(x, y, 1)); chr != nil && *chr == word[1] {
 					candidates[candidate{x, y, d}] = true
 				}
 			}
@@ -88,7 +53,7 @@ func part1(g *grid) int {
 	// the candidate starting point.
 	for i := 2; i < len(word); i++ {
 		for c := range candidates {
-			chr := g.get(g.move(c.x, c.y, i, c.d))
+			chr := g.Get(c.d.Move(c.x, c.y, i))
 			if chr == nil || *chr != word[i] {
 				delete(candidates, c)
 			}
@@ -98,19 +63,19 @@ func part1(g *grid) int {
 	return len(candidates)
 }
 
-func part2(g *grid) (total int) {
-	for y := 0; y < g.height; y++ {
-		for x := 0; x < g.width; x++ {
-			if *g.get(x, y) != 'A' {
+func part2(g *grid.Grid[byte]) (total int) {
+	for y := 0; y < g.Height; y++ {
+		for x := 0; x < g.Width; x++ {
+			if *g.Get(x, y) != 'A' {
 				continue
 			}
 
-			ul := g.get(g.move(x, y, 1, DIR_U|DIR_L))
-			ur := g.get(g.move(x, y, 1, DIR_U|DIR_R))
-			dl := g.get(g.move(x, y, 1, DIR_D|DIR_L))
-			dr := g.get(g.move(x, y, 1, DIR_D|DIR_R))
+			ul := g.Get((grid.DIR_U | grid.DIR_L).Move(x, y, 1))
+			ur := g.Get((grid.DIR_U | grid.DIR_R).Move(x, y, 1))
+			dl := g.Get((grid.DIR_D | grid.DIR_L).Move(x, y, 1))
+			dr := g.Get((grid.DIR_D | grid.DIR_R).Move(x, y, 1))
 
-			if m_s(ul, dr) && m_s(ur, dl) {
+			if xMas(ul, dr) && xMas(ur, dl) {
 				total += 1
 			}
 		}
@@ -119,41 +84,7 @@ func part2(g *grid) (total int) {
 	return
 }
 
-func (g *grid) get(x, y int) *byte {
-	if y < 0 || g.height <= y {
-		return nil
-	}
-
-	if x < 0 || g.width <= x {
-		return nil
-	}
-
-	return &g.elems[y*g.width+x]
-}
-
-func (g *grid) move(x, y, step int, d dir) (dx, dy int) {
-	dx, dy = x, y
-
-	if DIR_U&d != 0 {
-		dy -= step
-	}
-
-	if DIR_D&d != 0 {
-		dy += step
-	}
-
-	if DIR_L&d != 0 {
-		dx -= step
-	}
-
-	if DIR_R&d != 0 {
-		dx += step
-	}
-
-	return
-}
-
-func m_s(a, b *byte) bool {
+func xMas(a, b *byte) bool {
 	if a == nil || b == nil {
 		return false
 	} else {
