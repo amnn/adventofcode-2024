@@ -45,6 +45,13 @@ func ReadBytes(r io.Reader) *Grid[byte] {
 	return ReadFunc(r, func(b byte) byte { return b })
 }
 
+// Make a shallow copy of the grid `g`.
+func (g *Grid[E]) Copy() *Grid[E] {
+	elems := make([]E, len(g.elems))
+	copy(elems, g.elems)
+	return &Grid[E]{elems, g.Width, g.Height}
+}
+
 // Access an element from the grid by its position. Returns `nil` if the access
 // is out of bounds.
 func (g *Grid[E]) Get(x, y int) *E {
