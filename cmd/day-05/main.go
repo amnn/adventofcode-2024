@@ -10,7 +10,8 @@ import (
 	"strings"
 )
 
-type order map[edge]bool
+type exists struct{}
+type order map[edge]exists
 
 type edge struct {
 	before, after int
@@ -31,7 +32,7 @@ func readInput(r io.Reader) (rules order, updates [][]int) {
 	for s.Scan() {
 		var before, after int
 		if _, err := fmt.Sscanf(s.Text(), "%d|%d", &before, &after); err == nil {
-			rules[edge{before, after}] = true
+			rules[edge{before, after}] = exists{}
 		} else {
 			break
 		}

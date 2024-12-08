@@ -6,6 +6,8 @@ import (
 	"os"
 )
 
+type exists struct{}
+
 func main() {
 	grid := grid.ReadBytes(os.Stdin)
 
@@ -20,7 +22,7 @@ func part1(g *grid.Grid[byte]) int {
 	}
 
 	word := []byte("XMAS")
-	candidates := make(map[candidate]bool)
+	candidates := make(map[candidate]exists)
 
 	// Initialise candidates by finding all potential starting points, and
 	// checking if the second letter exists at any of the 8 directions eminating
@@ -42,7 +44,7 @@ func part1(g *grid.Grid[byte]) int {
 				grid.DIR_U | grid.DIR_L,
 			} {
 				if chr := g.Get(d.Move(x, y, 1)); chr != nil && *chr == word[1] {
-					candidates[candidate{x, y, d}] = true
+					candidates[candidate{x, y, d}] = exists{}
 				}
 			}
 		}
