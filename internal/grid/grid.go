@@ -80,6 +80,19 @@ func (g *Grid[E]) Find(e E) (x, y int, found bool) {
 	return 0, 0, false
 }
 
+// Returns the coordinates of all points in grid `g` that match `e`.
+func (g *Grid[E]) FindAll(e E) func(yield func(int, int) bool) {
+	return func(yield func(int, int) bool) {
+		for i, elem := range g.elems {
+			if elem == e {
+				if !yield(i%g.Width, i/g.Width) {
+					return
+				}
+			}
+		}
+	}
+}
+
 // Counts the number of occurrences of `e` in `g`.
 func (g *Grid[E]) Count(e E) (count int) {
 	for _, elem := range g.elems {
