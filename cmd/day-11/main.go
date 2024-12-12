@@ -7,9 +7,22 @@ import (
 	"os"
 )
 
+type stone struct {
+	engraving  string
+	generation int
+}
+
 func main() {
 	input := readInput(io.Reader(os.Stdin))
-	fmt.Println("Part 1:", part1(input))
+
+	input1 := make([]big.Int, len(input))
+	copy(input1, input)
+
+	input2 := make([]big.Int, len(input))
+	copy(input2, input)
+
+	fmt.Println("Part 1:", simulate(input1, 25))
+	fmt.Println("Part 2:", simulate(input2, 75))
 }
 
 func readInput(r io.Reader) []big.Int {
@@ -28,20 +41,7 @@ func readInput(r io.Reader) []big.Int {
 	return input
 }
 
-func part1(input []big.Int) int {
-	curr, next := input, make([]big.Int, 0)
-
-	for i := 0; i < 25; i++ {
-		blink(&curr, &next)
-		curr, next = next, curr
-	}
-
-	return len(curr)
-}
-
-func blink(input, output *[]big.Int) {
-	*output = (*output)[:0]
-
+func simulate(input []big.Int, reps int) (total int) {
 	var (
 		bi0    = big.NewInt(int64(0))
 		bi1    = big.NewInt(int64(1))
@@ -49,29 +49,47 @@ func blink(input, output *[]big.Int) {
 		bi2024 = big.NewInt(int64(2024))
 	)
 
-	for _, n := range *input {
-		// If the stone is engraved with the number 0, it is replaced by a stone
-		// engraved with the number `1`.
-		if n.Cmp(bi0) == 0 {
-			*output = append(*output, *bi1)
-			continue
+	cache := make(map[stone]int)
+	var count func(*big.Int, int) int
+	count = func(engraving *big.Int, reps int) int {
+		if reps <= 0 {
+			return 1
 		}
 
-		// If the stone is engraved with a number that has an even number of
-		// digits, it is replaced by two stones. The left half of the digits are
-		// engraved on the new left stone, and the right half of the digits are
-		// engraved on the new right stone. (The new numbers don't keep extra
-		// leading zeroes: 1000 would become stones 10 and 0.)
-		digits := len(n.Text(10))
-		if digits%2 == 0 {
-			*output = append(*output, big.Int{}, big.Int{})
-			s0, s1 := &(*output)[len(*output)-2], &(*output)[len(*output)-1]
-			s0.Exp(bi10, big.NewInt(int64(digits/2)), nil)
-			s0.DivMod(&n, s0, s1)
-			continue
+		key := stone{engraving.Text(10), reps}
+		if v, ok := cache[key]; ok {
+			return v
 		}
 
-		*output = append(*output, big.Int{})
-		(*output)[len(*output)-1].Mul(&n, bi2024)
+		if engraving.Cmp(bi0) == 0 {
+			// If the stone is engraved with the number 0, it is replaced by a
+			// stone engraved with the number `1`.
+			cache[key] = count(bi1, reps-1)
+		} else if digits := len(key.engraving); digits%2 == 0 {
+			// If the stone is engraved with a number that has an even number of
+			// digits, it is replaced by two stones. The left half of the digits
+			// are engraved on the new left stone, and the right half of the digits
+			// are engraved on the new right stone. (The new numbers don't keep
+			// extra leading zeroes: 1000 would become stones 10 and 0.)
+			var l, r big.Int
+			l.Exp(bi10, big.NewInt(int64(digits/2)), nil)
+			l.DivMod(engraving, &l, &r)
+			cache[key] = count(&l, reps-1) + count(&r, reps-1)
+		} else {
+			// If none of the other rules apply, the stone is replaced by a new
+			// stone; the old stone's number multiplied by 2024 is engraved on the
+			// new stone.
+			var n big.Int
+			n.Mul(engraving, bi2024)
+			cache[key] = count(&n, reps-1)
+		}
+
+		return cache[key]
 	}
+
+	for _, n := range input {
+		total += count(&n, reps)
+	}
+
+	return
 }
