@@ -8,19 +8,28 @@ import (
 )
 
 type field struct {
-	area, perimeter int
+	area, perimeter, corner int
 }
 
 func main() {
 	grid := grid.ReadBytes(os.Stdin)
 	renumbered := renumber(grid)
 	fmt.Println("Part 1:", part1(renumbered))
+	fmt.Println("Part 2:", part2(renumbered))
 }
 
 func part1(g *grid.Grid[int]) (cost int) {
 	fields := surveyFields(g)
 	for _, f := range fields {
 		cost += f.area * f.perimeter
+	}
+	return
+}
+
+func part2(g *grid.Grid[int]) (cost int) {
+	fields := surveyFields(g)
+	for _, f := range fields {
+		cost += f.area * f.corner
 	}
 	return
 }
@@ -36,10 +45,30 @@ func surveyFields(g *grid.Grid[int]) map[int]field {
 		}
 
 		curr.area++
+		var in, out grid.Dir
 		for _, dir := range []grid.Dir{grid.DIR_U, grid.DIR_R, grid.DIR_D, grid.DIR_L} {
-			nextX, nextY := dir.Move(x, y, 1)
-			if next := g.Get(nextX, nextY); next == nil || *next != color {
+			nbrX, nbrY := dir.Move(x, y, 1)
+			if nbr := g.Get(nbrX, nbrY); nbr == nil || *nbr != color {
 				curr.perimeter++
+				out |= dir
+			} else {
+				in |= dir
+			}
+		}
+
+		for _, diag := range []grid.Dir{
+			grid.DIR_U | grid.DIR_R,
+			grid.DIR_R | grid.DIR_D,
+			grid.DIR_D | grid.DIR_L,
+			grid.DIR_L | grid.DIR_U,
+		} {
+			nbrX, nbrY := diag.Move(x, y, 1)
+			if nbr := g.Get(nbrX, nbrY); (nbr == nil || *nbr != color) && in&diag == diag {
+				curr.corner++
+			}
+
+			if out&diag == diag {
+				curr.corner++
 			}
 		}
 
