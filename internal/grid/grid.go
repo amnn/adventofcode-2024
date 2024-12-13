@@ -21,6 +21,12 @@ const (
 	DIR_L
 )
 
+// Create a new grid with dimensions `width` and `height`, all filled with zero
+// values for the element type.
+func New[E comparable](width, height int) *Grid[E] {
+	return &Grid[E]{make([]E, width*height), width, height}
+}
+
 // Read a grid from an `io.Reader`. The grid is expected to be a rectangular
 // arrangement of bytes, with rows represented by a line, ending in a newline
 // character. Lines are assumed to be of the same length as each other.
@@ -78,6 +84,16 @@ func (g *Grid[E]) Find(e E) (x, y int, found bool) {
 	}
 
 	return 0, 0, false
+}
+
+func (g *Grid[E]) Coords() func(yield func(int, int) bool) {
+	return func(yield func(int, int) bool) {
+		for i := range g.elems {
+			if !yield(i%g.Width, i/g.Width) {
+				return
+			}
+		}
+	}
 }
 
 // Returns the coordinates of all points in grid `g` that match `e`.
