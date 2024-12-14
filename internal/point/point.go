@@ -23,3 +23,7 @@ func (p Point) Move(v Vec) Point {
 func (v Vec) Neg() Vec {
 	return Vec{-v.Dx, -v.Dy}
 }
+
+func (v Vec) Scale(s int) Vec {
+	return Vec{s * v.Dx, s * v.Dy}
+}
