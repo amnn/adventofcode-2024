@@ -27,16 +27,21 @@ func New[E comparable](width, height int) *Grid[E] {
 	return &Grid[E]{make([]E, width*height), width, height}
 }
 
-// Read a grid from an `io.Reader`. The grid is expected to be a rectangular
-// arrangement of bytes, with rows represented by a line, ending in a newline
-// character. Lines are assumed to be of the same length as each other.
-func ReadFunc[E comparable](r io.Reader, f func(byte) E) *Grid[E] {
-	s := bufio.NewScanner(r)
-
+// Read a grid from a `*bufio.Scanner`. The grid is expected to be a
+// rectangular arrangement of bytes, with rows represented by a line, ending in
+// a newline character. Lines are assumed to be of the same length as each
+// other.
+//
+// Reading stops on EOF or after encountering an empty line.
+func ScanFunc[E comparable](s *bufio.Scanner, f func(byte) E) *Grid[E] {
 	var width, height int
 	var elems []E = make([]E, 0)
 	for s.Scan() {
 		line := s.Bytes()
+		if len(line) == 0 {
+			break
+		}
+
 		height += 1
 		width = len(line)
 		for _, b := range line {
@@ -45,6 +50,15 @@ func ReadFunc[E comparable](r io.Reader, f func(byte) E) *Grid[E] {
 	}
 
 	return &Grid[E]{elems, width, height}
+}
+
+// Read a grid from an `io.Reader`. The grid is expected to be a rectangular
+// arrangement of bytes, with rows represented by a line, ending in a newline
+// character. Lines are assumed to be of the same length as each other.
+//
+// Reading stops on EOF or after encountering an empty line.
+func ReadFunc[E comparable](r io.Reader, f func(byte) E) *Grid[E] {
+	return ScanFunc(bufio.NewScanner(r), f)
 }
 
 func ReadBytes(r io.Reader) *Grid[byte] {
