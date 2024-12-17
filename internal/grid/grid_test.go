@@ -40,3 +40,45 @@ func TestRotateCounterClockwiseMultiple(t *testing.T) {
 		}
 	}
 }
+
+func TestFlip(t *testing.T) {
+	if DIR_U.Flip() != DIR_D {
+		t.Errorf("expected %v, got %v", DIR_D, DIR_U.Flip())
+	}
+
+	if DIR_D.Flip() != DIR_U {
+		t.Errorf("expected %v, got %v", DIR_U, DIR_D.Flip())
+	}
+
+	if DIR_L.Flip() != DIR_R {
+		t.Errorf("expected %v, got %v", DIR_R, DIR_L.Flip())
+	}
+
+	if DIR_R.Flip() != DIR_L {
+		t.Errorf("expected %v, got %v", DIR_L, DIR_R.Flip())
+	}
+}
+
+func TestFlipMultiple(t *testing.T) {
+	d := DIR_U | DIR_L
+	if d.Flip() != DIR_D|DIR_R {
+		t.Errorf("expected %v, got %v", DIR_D|DIR_R, d.Flip())
+	}
+
+	d = DIR_D | DIR_R
+	if d.Flip() != DIR_U|DIR_L {
+		t.Errorf("expected %v, got %v", DIR_U|DIR_L, d.Flip())
+	}
+}
+
+func TestFlipSymmetric(t *testing.T) {
+	d := DIR_U | DIR_D
+	if d.Flip() != d {
+		t.Errorf("expected %v, got %v", d, d.Flip())
+	}
+
+	d = DIR_L | DIR_R
+	if d.Flip() != d {
+		t.Errorf("expected %v, got %v", d, d.Flip())
+	}
+}

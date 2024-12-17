@@ -169,6 +169,10 @@ func (d Dir) RotateCounterClockwise() Dir {
 	return (0b0001&d)<<3 | (d >> 1)
 }
 
+func (d Dir) Flip() Dir {
+	return (0b0011&d)<<2 | (0b1100&d)>>2
+}
+
 func (g *Grid[E]) Format(f fmt.State, _ rune) {
 	for y := 0; y < g.Height; y++ {
 		for x := 0; x < g.Width; x++ {

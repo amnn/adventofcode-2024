@@ -29,6 +29,7 @@ const (
 	WALL
 	START
 	END
+	SEAT
 )
 
 const (
@@ -39,6 +40,7 @@ const (
 func main() {
 	maze := readInput(os.Stdin)
 	fmt.Println("Part 1:", part1(maze))
+	fmt.Println("Part 2:", part2(maze))
 }
 
 func readInput(r io.Reader) *grid.Grid[cell] {
@@ -58,7 +60,83 @@ func readInput(r io.Reader) *grid.Grid[cell] {
 	})
 }
 
-func part1(g *grid.Grid[cell]) int {
+func part1(g *grid.Grid[cell]) (cost int) {
+	dists := dijkstra(g)
+	endX, endY, _ := g.Find(END)
+	return minCost(dists, endX, endY)
+}
+
+func part2(g *grid.Grid[cell]) (seats int) {
+	dists := dijkstra(g)
+	endX, endY, _ := g.Find(END)
+	cost := minCost(dists, endX, endY)
+
+	// Fill the frontier with all the ending configurations that have minimal cost
+	frontier := make([]config, 0)
+	visited := make(map[config]struct{})
+	for _, d := range []grid.Dir{grid.DIR_U, grid.DIR_R, grid.DIR_D, grid.DIR_L} {
+		if s, ok := dists[config{endX, endY, d}]; ok && s.dist == cost {
+			frontier = append(frontier, config{endX, endY, d})
+		}
+	}
+
+	// Flood fill the grid from the ending configuration to the starting
+	// configuration
+	var curr config
+	for len(frontier) > 0 {
+		last := len(frontier) - 1
+		frontier, curr = frontier[:last], frontier[last]
+		dist := dists[curr].dist
+
+		if _, ok := visited[curr]; ok {
+			continue
+		} else {
+			visited[curr] = struct{}{}
+		}
+
+		*g.Get(curr.x, curr.y) = SEAT
+
+		// Check for optimal paths ending in the current configuration that were
+		// preceded by a turn
+		prevTurnClockwise := config{curr.x, curr.y, curr.dir.RotateClockwise()}
+		if s, ok := dists[prevTurnClockwise]; ok && s.dist == dist-TURN_COST {
+			frontier = append(frontier, prevTurnClockwise)
+		}
+
+		prevTurnCounterClockwise := config{curr.x, curr.y, curr.dir.RotateCounterClockwise()}
+		if s, ok := dists[prevTurnCounterClockwise]; ok && s.dist == dist-TURN_COST {
+			frontier = append(frontier, prevTurnCounterClockwise)
+		}
+
+		// Check for optimal paths ending in the current configuration that were
+		// preceded by a move.
+		prevX, prevY := curr.dir.Flip().Move(curr.x, curr.y, 1)
+		if c := g.Get(prevX, prevY); c == nil || *c == WALL {
+			continue
+		}
+
+		prevStep := config{prevX, prevY, curr.dir}
+		if s, ok := dists[prevStep]; ok && s.dist == dist-STEP_COST {
+			frontier = append(frontier, prevStep)
+		}
+	}
+
+	fmt.Println(g)
+	return g.Count(SEAT)
+}
+
+func minCost(dists map[config]*state, x, y int) (cost int) {
+	for _, d := range []grid.Dir{grid.DIR_U, grid.DIR_R, grid.DIR_D, grid.DIR_L} {
+		if s, ok := dists[config{x, y, d}]; ok {
+			if cost == 0 || s.dist < cost {
+				cost = s.dist
+			}
+		}
+	}
+	return
+}
+
+func dijkstra(g *grid.Grid[cell]) map[config]*state {
 	startX, startY, foundStart := g.Find(START)
 	if !foundStart {
 		panic("no start found")
@@ -89,7 +167,7 @@ func part1(g *grid.Grid[cell]) int {
 	for pq.Len() > 0 {
 		s := heap.Pop(&pq).(*state)
 		if s.x == endX && s.y == endY {
-			return s.dist
+			break
 		}
 
 		stepX, stepY := s.dir.Move(s.x, s.y, 1)
@@ -101,7 +179,7 @@ func part1(g *grid.Grid[cell]) int {
 		relax(s.dist+TURN_COST, s.x, s.y, s.dir.RotateCounterClockwise())
 	}
 
-	return 0
+	return dists
 }
 
 func (pq priorityQueue) Len() int {
@@ -146,5 +224,7 @@ func (c cell) Format(f fmt.State, _ rune) {
 		fmt.Fprint(f, "S")
 	case END:
 		fmt.Fprint(f, "E")
+	case SEAT:
+		fmt.Fprint(f, "O")
 	}
 }
