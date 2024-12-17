@@ -162,7 +162,11 @@ func (d Dir) Move(x, y int, step int) (dx, dy int) {
 }
 
 func (d Dir) RotateClockwise() Dir {
-	return (0b111&d)<<1 | (d >> 3)
+	return (0b0111&d)<<1 | (d >> 3)
+}
+
+func (d Dir) RotateCounterClockwise() Dir {
+	return (0b0001&d)<<3 | (d >> 1)
 }
 
 func (g *Grid[E]) Format(f fmt.State, _ rune) {
