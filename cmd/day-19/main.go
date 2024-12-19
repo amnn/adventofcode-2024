@@ -11,6 +11,7 @@ import (
 func main() {
 	towels, patterns := readInput(os.Stdin)
 	fmt.Println("Part 1:", part1(towels, patterns))
+	fmt.Println("Part 2:", part2(towels, patterns))
 }
 
 func readInput(r io.Reader) (towels []string, patterns []string) {
@@ -42,6 +43,17 @@ func part1(towels []string, patterns []string) (possible int) {
 	return
 }
 
+func part2(towels []string, patterns []string) (ways int) {
+	cache := make(map[string]int)
+	cache[""] = 1
+
+	for _, pattern := range patterns {
+		ways += patternWays(pattern, towels, cache)
+	}
+
+	return
+}
+
 func patternPossible(pattern string, towels []string, cache map[string]bool) (possible bool) {
 	if possible, ok := cache[pattern]; ok {
 		return possible
@@ -59,5 +71,22 @@ func patternPossible(pattern string, towels []string, cache map[string]bool) (po
 	}
 
 	cache[pattern] = possible
+	return
+}
+
+func patternWays(pattern string, towels []string, cache map[string]int) (ways int) {
+	if ways, ok := cache[pattern]; ok {
+		return ways
+	}
+
+	for _, towel := range towels {
+		if !strings.HasPrefix(pattern, towel) {
+			continue
+		}
+
+		ways += patternWays(pattern[len(towel):], towels, cache)
+	}
+
+	cache[pattern] = ways
 	return
 }
