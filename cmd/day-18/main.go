@@ -22,6 +22,7 @@ const (
 func main() {
 	points := readInput(os.Stdin)
 	fmt.Println("Part 1:", part1(points))
+	fmt.Println("Part 2:", part2(points))
 }
 
 func readInput(r io.Reader) []point.Point {
@@ -41,14 +42,24 @@ func readInput(r io.Reader) []point.Point {
 }
 
 func part1(points []point.Point) int {
+	return floodFillAfter(points[:DROP])
+}
+
+func part2(points []point.Point) point.Point {
+	for i, p := range points {
+		if floodFillAfter(points[:i+1]) == 0 {
+			return p
+		}
+	}
+
+	panic("no solution")
+}
+
+func floodFillAfter(points []point.Point) int {
 	g := grid.New[int](DIM, DIM)
 
 	// Simulate falling bytes
-	for i, p := range points {
-		if i >= DROP {
-			break
-		}
-
+	for _, p := range points {
 		*g.Get(p.X, p.Y) = math.MaxInt
 	}
 
