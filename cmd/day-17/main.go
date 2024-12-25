@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -32,7 +33,7 @@ func main() {
 
 	fmt.Println(&m)
 	fmt.Println("Part 1:", part1(m))
-	// fmt.Println("Part 2:", part2(m))
+	fmt.Println("Part 2:", part2(m))
 }
 
 func readInput(r io.Reader) (m vm) {
@@ -69,25 +70,53 @@ func part1(m vm) string {
 }
 
 func part2(m vm) int {
-outer:
-	for a := 0; ; a++ {
-		copy := m
-		copy.a = a
+	var curr, next []int
 
-		for copy.step() {
-			if len(copy.out) > len(copy.ops) {
-				continue outer
+	// Initially, any 7 bit pattern could be a candidate -- we will whittle them
+	// down when we add the first triple and nail down the first output character.
+	for i := 0; i < (1 << 7); i++ {
+		next = append(next, i)
+	}
+
+	// After round `r`, all candidates in `next` will produce the correct first
+	// `r + 1` outputs.
+	for r := 0; r < len(m.ops); r++ {
+		curr, next = next, nil
+		for _, c := range curr {
+			// Add another 3 high bits to the candidate and test how that affects the
+			// last output.
+			for triplet := 0; triplet < 8; triplet++ {
+				n := c | (triplet << (7 + r*3))
+
+				copy := m
+				copy.a = n
+				if copy.evalUntil(r+1) && bytes.HasPrefix(m.ops, copy.out) {
+					next = append(next, n)
+				}
 			}
-
-			if !slices.Equal(copy.out, copy.ops[:len(copy.out)]) {
-				continue outer
-			}
-		}
-
-		if slices.Equal(copy.out, copy.ops) {
-			return a
 		}
 	}
+
+	// Gather all the viable inputs to then find the smallest one.
+	var answers []int
+	for _, n := range next {
+		copy := m
+		copy.a = n
+		if !copy.evalUntil(len(m.ops)+1) && bytes.Equal(m.ops, copy.out) {
+			answers = append(answers, n)
+		}
+	}
+
+	return slices.Min(answers)
+}
+
+// Step the machine until it produces at least `out` outputs. Returns a boolean
+// indicating if it terminated early or not.
+func (m *vm) evalUntil(out int) bool {
+	for len(m.out) < out && m.step() {
+	}
+
+	return len(m.out) >= out
 }
 
 func (m *vm) step() bool {
