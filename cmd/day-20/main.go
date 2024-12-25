@@ -19,12 +19,10 @@ const (
 
 func main() {
 	g := readInput(os.Stdin)
-	fmt.Println("Part 1:", part1(g))
-}
 
-func part1(g *grid.Grid[cell]) int {
 	floodFill(g)
-	return countShortcuts(g, 100)
+	fmt.Println("Part 1:", countShortcuts(g, 2, 100))
+	fmt.Println("Part 2:", countShortcuts(g, 20, 100))
 }
 
 func readInput(r io.Reader) *grid.Grid[cell] {
@@ -66,36 +64,35 @@ outer:
 	}
 }
 
-func countShortcuts(g *grid.Grid[cell], minSaving int) (shortcuts int) {
+func countShortcuts(g *grid.Grid[cell], dist, saving int) (shortcuts int) {
 	for x, y := range g.Coords() {
 		from := g.Get(x, y)
 		if *from == WALL {
 			continue
 		}
 
-		for _, d := range []grid.Dir{grid.DIR_U, grid.DIR_R, grid.DIR_D, grid.DIR_L} {
-			if to := g.Get(d.Move(x, y, 2)); to != nil && *to != WALL {
-				if int(*to)-int(*from)-2 >= minSaving {
-					shortcuts++
-				}
-			}
-		}
-
-		for _, d := range []grid.Dir{
-			grid.DIR_U | grid.DIR_R,
-			grid.DIR_R | grid.DIR_D,
-			grid.DIR_D | grid.DIR_L,
-			grid.DIR_L | grid.DIR_U,
-		} {
-			if to := g.Get(d.Move(x, y, 1)); to != nil && *to != WALL {
-				if int(*to)-int(*from)-2 >= minSaving {
-					shortcuts++
+		for i := x - dist; i <= x+dist; i++ {
+			vdist := dist - abs(i-x)
+			for j := y - vdist; j <= y+vdist; j++ {
+				travel := abs(x-i) + abs(y-j)
+				if to := g.Get(i, j); to != nil && *to != WALL {
+					if int(*to)-int(*from)-travel >= saving {
+						shortcuts++
+					}
 				}
 			}
 		}
 	}
 
 	return
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	} else {
+		return n
+	}
 }
 
 func (c cell) Format(f fmt.State, r rune) {
