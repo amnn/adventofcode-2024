@@ -84,8 +84,8 @@ func readInput(r io.Reader) (g graph) {
 func maximalCliques(g graph) (cliques []set.Set[string]) {
 	clique := set.New[string]()
 
-	var bronKerbosh func(p, x set.Set[string])
-	bronKerbosh = func(p, x set.Set[string]) {
+	var bronKerbosch func(p, x set.Set[string])
+	bronKerbosch = func(p, x set.Set[string]) {
 		if p.IsEmpty() && x.IsEmpty() {
 			cliques = append(cliques, clique.Copy())
 			clear(clique)
@@ -94,14 +94,14 @@ func maximalCliques(g graph) (cliques []set.Set[string]) {
 
 		for v := range p {
 			clique.Add(v)
-			bronKerbosh(p.Intersect(g.edges[v]), x.Intersect(g.edges[v]))
+			bronKerbosch(p.Intersect(g.edges[v]), x.Intersect(g.edges[v]))
 			clique.Remove(v)
 			p.Remove(v)
 			x.Add(v)
 		}
 	}
 
-	bronKerbosh(g.nodes.Copy(), set.New[string]())
+	bronKerbosch(g.nodes.Copy(), set.New[string]())
 	return
 }
 
