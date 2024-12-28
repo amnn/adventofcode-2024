@@ -16,7 +16,7 @@ type cacheKey struct {
 	bias bias
 }
 
-type cache map[cacheKey]string
+type cache map[cacheKey]int
 
 // Whether we need to bias the first direction we move in to avoid the X slot.
 type bias byte
@@ -66,9 +66,9 @@ func part1(codes []string) (total int) {
 	}
 
 	for _, code := range codes {
-		path := cascadingOptimalPath(code, NUMERIC_KEYS, caches)
+		steps := cascadingOptimalPath(code, NUMERIC_KEYS, caches)
 		n, _ := strconv.Atoi(code[:len(code)-1])
-		total += len(path) * n
+		total += steps * n
 	}
 
 	return
@@ -76,14 +76,14 @@ func part1(codes []string) (total int) {
 
 func part2(codes []string) (total int) {
 	var caches []cache
-	for i := 0; i < 25; i++ {
+	for i := 0; i < 26; i++ {
 		caches = append(caches, make(cache))
 	}
 
 	for _, code := range codes {
-		path := cascadingOptimalPath(code, NUMERIC_KEYS, caches)
+		steps := cascadingOptimalPath(code, NUMERIC_KEYS, caches)
 		n, _ := strconv.Atoi(code[:len(code)-1])
-		total += len(path) * n
+		total += steps * n
 	}
 
 	return
@@ -103,12 +103,12 @@ func cascadingOptimalPath(
 	code string,
 	pad keyPad,
 	caches []cache,
-) string {
+) int {
 	if len(caches) == 0 {
-		return code
+		return len(code)
 	}
 
-	return optimalPath(code, pad, caches[0], func(step string) string {
+	return optimalPath(code, pad, caches[0], func(step string) int {
 		return cascadingOptimalPath(step, DIRECTION_KEYS, caches[1:])
 	})
 }
@@ -117,24 +117,24 @@ func optimalPath(
 	code string,
 	pad keyPad,
 	cache cache,
-	plan func(string) string,
-) string {
+	plan func(string) int,
+) (minLen int) {
 	curr := 'A'
-	var b strings.Builder
+
 	for _, next := range code {
-		b.WriteString(optimalStep(curr, next, pad, cache, plan))
+		minLen += optimalStep(curr, next, pad, cache, plan)
 		curr = next
 	}
 
-	return b.String()
+	return
 }
 
 func optimalStep(
 	curr, next rune,
 	pad keyPad,
 	cache cache,
-	plan func(code string) string,
-) string {
+	plan func(code string) int,
+) int {
 	corner := pad['X']
 	from, to := pad[curr], pad[next]
 	v := to.Sub(from)
@@ -150,8 +150,8 @@ func optimalStep(
 	}
 
 	key := cacheKey{v, bias}
-	if path, ok := cache[key]; ok {
-		return path
+	if steps, ok := cache[key]; ok {
+		return steps
 	}
 
 	var x, y string
@@ -169,17 +169,15 @@ func optimalStep(
 
 	minLen := math.MaxInt
 	var b strings.Builder
-	var path string
 
 	if bias&HORZ != 0 {
 		b.Reset()
 		b.WriteString(x)
 		b.WriteString(y)
 		b.WriteRune('A')
-		xy := plan(b.String())
-		if len(xy) < minLen {
-			minLen = len(xy)
-			path = xy
+		lenXY := plan(b.String())
+		if lenXY < minLen {
+			minLen = lenXY
 		}
 	}
 
@@ -188,13 +186,12 @@ func optimalStep(
 		b.WriteString(y)
 		b.WriteString(x)
 		b.WriteRune('A')
-		yx := plan(b.String())
-		if len(yx) < minLen {
-			minLen = len(yx)
-			path = yx
+		lenYX := plan(b.String())
+		if lenYX < minLen {
+			minLen = lenYX
 		}
 	}
 
-	cache[key] = path
-	return path
+	cache[key] = minLen
+	return minLen
 }
