@@ -56,24 +56,34 @@ var DIRECTION_KEYS = keyPad{
 func main() {
 	codes := readInput(os.Stdin)
 	fmt.Println("Part 1:", part1(codes))
-
+	fmt.Println("Part 2:", part2(codes))
 }
 
 func part1(codes []string) (total int) {
-	l1, l2, l3 := make(cache), make(cache), make(cache)
+	var caches []cache
+	for i := 0; i < 3; i++ {
+		caches = append(caches, make(cache))
+	}
 
-	for _, c0 := range codes {
-		c3 := optimalPath(c0, NUMERIC_KEYS, l1, func(c1 string) string {
-			return optimalPath(c1, DIRECTION_KEYS, l2, func(c2 string) string {
-				return optimalPath(c2, DIRECTION_KEYS, l3, func(c3 string) string {
-					return c3
-				})
-			})
-		})
+	for _, code := range codes {
+		path := cascadingOptimalPath(code, NUMERIC_KEYS, caches)
+		n, _ := strconv.Atoi(code[:len(code)-1])
+		total += len(path) * n
+	}
 
-		fmt.Println(c0, c3)
-		n, _ := strconv.Atoi(c0[:len(c0)-1])
-		total += len(c3) * n
+	return
+}
+
+func part2(codes []string) (total int) {
+	var caches []cache
+	for i := 0; i < 25; i++ {
+		caches = append(caches, make(cache))
+	}
+
+	for _, code := range codes {
+		path := cascadingOptimalPath(code, NUMERIC_KEYS, caches)
+		n, _ := strconv.Atoi(code[:len(code)-1])
+		total += len(path) * n
 	}
 
 	return
@@ -87,6 +97,20 @@ func readInput(r io.Reader) (codes []string) {
 	}
 
 	return
+}
+
+func cascadingOptimalPath(
+	code string,
+	pad keyPad,
+	caches []cache,
+) string {
+	if len(caches) == 0 {
+		return code
+	}
+
+	return optimalPath(code, pad, caches[0], func(step string) string {
+		return cascadingOptimalPath(step, DIRECTION_KEYS, caches[1:])
+	})
 }
 
 func optimalPath(
